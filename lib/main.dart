@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
-      theme: brightness == Brightness.light ? theme.light() : theme.light(),
+      theme: brightness == Brightness.light ? theme.light() : theme.dark(),
       home: const LoginScreen(),
     );
   }
