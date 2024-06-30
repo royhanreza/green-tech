@@ -42,57 +42,58 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(
-                height: 15,
-              ),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                              child: Text(
-                            'Status Refill',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          )),
-                          Text(
-                            '32%',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          )
-                        ],
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        '32 / 100 Lt',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      LinearProgressIndicator(
-                        value: 0.32,
-                        semanticsLabel: 'Status Penampungan Air',
-                        borderRadius: BorderRadius.circular(2),
-                        color: Colors.blue,
-                      )
-                    ],
-                  ),
-                ),
-              ),
+              // const SizedBox(
+              //   height: 15,
+              // ),
+              // Card(
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(24),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         Row(
+              //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //           children: [
+              //             Expanded(
+              //                 child: Text(
+              //               'Status Refill',
+              //               style: Theme.of(context)
+              //                   .textTheme
+              //                   .bodyMedium
+              //                   ?.copyWith(fontWeight: FontWeight.bold),
+              //             )),
+              //             Text(
+              //               '32%',
+              //               style: Theme.of(context)
+              //                   .textTheme
+              //                   .bodyMedium
+              //                   ?.copyWith(fontWeight: FontWeight.bold),
+              //             )
+              //           ],
+              //         ),
+              //         const SizedBox(
+              //           height: 5,
+              //         ),
+              //         Text(
+              //           '32 / 100 Lt',
+              //           style: Theme.of(context).textTheme.bodySmall,
+              //         ),
+              //         const SizedBox(
+              //           height: 20,
+              //         ),
+              //         LinearProgressIndicator(
+              //           value: 0.32,
+              //           semanticsLabel: 'Status Penampungan Air',
+              //           borderRadius: BorderRadius.circular(2),
+              //           color: Colors.blue,
+              //         )
+              //       ],
+              //     ),
+              //   ),
+              // ),
               Padding(
-                padding: const EdgeInsets.only(left: 5, top: 24, bottom: 24),
+                // padding: const EdgeInsets.only(left: 5, top: 24, bottom: 24),
+                padding: const EdgeInsets.only(left: 5, top: 100, bottom: 24),
                 child: Text(
                   'Menu',
                   style: Theme.of(context)

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:green_tech/core/app_asset.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +17,8 @@ enum DayFilter { senin, selasa, rabu, kamis, jumat, sabtu, minggu }
 
 class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
   bool _isLoadingSave = false;
+  bool _isInitDataLoading = true;
+  StreamSubscription<DatabaseEvent>? _subscription;
 
   TimeOfDay _scheduleTime =
       TimeOfDay(hour: DateTime.now().hour, minute: DateTime.now().minute);
@@ -23,6 +28,20 @@ class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
   Set<DayFilter> days = <DayFilter>{};
 
   bool _isEveryday = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _getScheduleValue();
+    // print(_scheduleTime);
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,83 +125,91 @@ class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Buat Jadwal',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                      _isInitDataLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Buat Jadwal',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(
+                                    height: 24,
+                                  ),
+                                  const Text('Waktu'),
+                                  const SizedBox(
+                                    height: 10,
+                                  ),
+                                  ActionChip(
+                                      onPressed: () {
+                                        _onPressTime();
+                                      },
+                                      avatar: const Icon(Icons.schedule),
+                                      label: Text(_scheduleTimeText)),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
+                                  const Text('Hari'),
+                                  const SizedBox(
+                                    height: 10,
+                                  ),
+                                  Wrap(
+                                    spacing: 5,
+                                    children:
+                                        DayFilter.values.map((DayFilter day) {
+                                      return FilterChip(
+                                        label: Text(day.name),
+                                        selected: days.contains(day),
+                                        onSelected: (bool selected) {
+                                          if (selected) {
+                                            setState(() {
+                                              days.add(day);
+                                            });
+                                          } else {
+                                            setState(() {
+                                              days.remove(day);
+                                            });
+                                          }
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(
+                                    height: 20,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                          value: _isEveryday,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              _isEveryday = value!;
+                                            });
+                                          }),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _isEveryday = !_isEveryday;
+                                          });
+                                        },
+                                        child: const Text('Ulangi Setiap Hari'),
+                                      )
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            const Text('Waktu'),
-                            const SizedBox(
-                              height: 10,
-                            ),
-                            ActionChip(
-                                onPressed: () {
-                                  _onPressTime();
-                                },
-                                avatar: const Icon(Icons.schedule),
-                                label: Text(_scheduleTimeText)),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            const Text('Hari'),
-                            const SizedBox(
-                              height: 10,
-                            ),
-                            Wrap(
-                              spacing: 5,
-                              children: DayFilter.values.map((DayFilter day) {
-                                return FilterChip(
-                                  label: Text(day.name),
-                                  selected: days.contains(day),
-                                  onSelected: (bool selected) {
-                                    if (selected) {
-                                      setState(() {
-                                        days.add(day);
-                                      });
-                                    } else {
-                                      setState(() {
-                                        days.remove(day);
-                                      });
-                                    }
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            Row(
-                              children: [
-                                Checkbox(
-                                    value: _isEveryday,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        _isEveryday = value!;
-                                      });
-                                    }),
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isEveryday = !_isEveryday;
-                                    });
-                                  },
-                                  child: const Text('Ulangi Setiap Hari'),
-                                )
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -194,7 +221,7 @@ class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
                       child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50)),
-                          onPressed: _isLoadingSave
+                          onPressed: _isLoadingSave || _isInitDataLoading
                               ? null
                               : () {
                                   _onPressSave();
@@ -210,16 +237,39 @@ class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
   }
 
   void _onPressSave() async {
-    debugPrint('Menyimpan..');
-    setState(() {
-      _isLoadingSave = true;
-    });
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _isLoadingSave = false;
-    });
+    try {
+      debugPrint('Menyimpan..');
 
-    _showScaffold(content: "Jadwal berhasil tersimpan");
+      setState(() {
+        _isLoadingSave = true;
+      });
+
+      Map<String, dynamic> schedule = {};
+
+      int scheduleHour = _scheduleTime.hour;
+      int scheduleMinute = _scheduleTime.minute;
+
+      for (var day in days) {
+        String dayName = day.toString().split('.').last;
+        schedule[dayName] = {
+          "hour": scheduleHour,
+          "minute": scheduleMinute,
+        };
+      }
+
+      schedule["repeat"] = _isEveryday ? 1 : 0;
+
+      DatabaseReference ref = FirebaseDatabase.instance.ref("schedule");
+      await ref.set(schedule);
+
+      _showScaffold(content: "Jadwal berhasil tersimpan");
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        _isLoadingSave = false;
+      });
+    }
   }
 
   void _showScaffold({required String content}) {
@@ -242,6 +292,66 @@ class _AutomationScheduleScreenState extends State<AutomationScheduleScreen> {
             .toString();
         // _scheduleTime = DateFormat('hh:mm').format(DateTime(year));
       });
+    }
+  }
+
+  void _getScheduleValue() async {
+    DatabaseReference scheduleRef = FirebaseDatabase.instance.ref('schedule');
+    _subscription = scheduleRef.onValue.listen((DatabaseEvent event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      print(data);
+      bool isEveryday = data['repeat'] == 1 ? true : false;
+
+      int scheduleHour = 0;
+      int scheduleMinute = 0;
+
+      data.forEach((key, value) {
+        if (value is Map &&
+            value.containsKey('hour') &&
+            value.containsKey('minute')) {
+          DayFilter? day = _dayFromString(key);
+          if (day != null) {
+            days.add(day);
+            scheduleHour = value["hour"];
+            scheduleMinute = value["minute"];
+          }
+        }
+      });
+
+      // print(scheduleHour);
+      // print(scheduleMinute);
+      final now = DateTime.now();
+
+      setState(() {
+        _scheduleTime = TimeOfDay(hour: scheduleHour, minute: scheduleMinute);
+        _scheduleTimeText = DateFormat('hh:mm')
+            .format(DateTime(
+                now.year, now.month, now.day, scheduleHour, scheduleMinute))
+            .toString();
+        _isEveryday = isEveryday;
+        _isInitDataLoading = false;
+      });
+    });
+  }
+
+  DayFilter? _dayFromString(String day) {
+    switch (day) {
+      case 'senin':
+        return DayFilter.senin;
+      case 'selasa':
+        return DayFilter.selasa;
+      case 'rabu':
+        return DayFilter.rabu;
+      case 'kamis':
+        return DayFilter.kamis;
+      case 'jumat':
+        return DayFilter.jumat;
+      case 'sabtu':
+        return DayFilter.sabtu;
+      case 'minggu':
+        return DayFilter.minggu;
+      default:
+        return null;
     }
   }
 }

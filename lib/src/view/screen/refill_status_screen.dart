@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:green_tech/core/app_asset.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -12,8 +14,25 @@ class RefillStatusScreen extends StatefulWidget {
 }
 
 class _RefillStatusScreenState extends State<RefillStatusScreen> {
+  bool _isInitDataLoading = true;
+  StreamSubscription<DatabaseEvent>? _subscription;
+
   double _refillPercent = 0;
-  final double _refillCapacity = 500;
+  final double _refillCapacity = 50;
+  int _volume = 0;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _getVolumeValue();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,32 +131,39 @@ class _RefillStatusScreenState extends State<RefillStatusScreen> {
                             const SizedBox(
                               height: 24,
                             ),
-                            Align(
-                              alignment: Alignment.center,
-                              child: CircularPercentIndicator(
-                                radius: 120.0,
-                                lineWidth: 15.0,
-                                animation: true,
-                                percent: _refillPercent,
-                                center: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "${(_refillPercent * 100).round().toString()} %",
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20.0),
+                            _isInitDataLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                : Align(
+                                    alignment: Alignment.center,
+                                    child: CircularPercentIndicator(
+                                      radius: 120.0,
+                                      lineWidth: 15.0,
+                                      animation: true,
+                                      percent: _refillPercent,
+                                      center: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            "${(_refillPercent * 100).round().toString()} %",
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 20.0),
+                                          ),
+                                          Text(
+                                            "$_volume Liter",
+                                            style:
+                                                const TextStyle(fontSize: 14.0),
+                                          )
+                                        ],
+                                      ),
+                                      circularStrokeCap:
+                                          CircularStrokeCap.round,
+                                      progressColor: _statusColor(),
                                     ),
-                                    Text(
-                                      "${(_refillPercent * _refillCapacity).round().toString()} Liter",
-                                      style: const TextStyle(fontSize: 14.0),
-                                    )
-                                  ],
-                                ),
-                                circularStrokeCap: CircularStrokeCap.round,
-                                progressColor: _statusColor(),
-                              ),
-                            ),
+                                  ),
                           ],
                         ),
                       ),
@@ -169,34 +195,49 @@ class _RefillStatusScreenState extends State<RefillStatusScreen> {
                     ],
                   ),
                 ),
-                Column(
-                  children: [
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50)),
-                          onPressed: () {
-                            _onPressRefresh();
-                          },
-                          child: const Text('Muat Ulang')),
-                    ),
-                  ],
-                )
+                // Column(
+                //   children: [
+                //     const Spacer(),
+                //     Padding(
+                //       padding: const EdgeInsets.all(24),
+                //       child: ElevatedButton(
+                //           style: ElevatedButton.styleFrom(
+                //               minimumSize: const Size(double.infinity, 50)),
+                //           onPressed: () {
+                //             _onPressRefresh();
+                //           },
+                //           child: const Text('Muat Ulang')),
+                //     ),
+                //   ],
+                // )
               ],
             )));
   }
 
-  void _onPressRefresh() {
-    debugPrint('Memuat Ulang..');
-    Random rng = Random();
-    double randomNumber = rng.nextInt(100) / 100;
-    setState(() {
-      _refillPercent = randomNumber;
+  void _getVolumeValue() async {
+    DatabaseReference controlRef = FirebaseDatabase.instance.ref('test');
+    _subscription = controlRef.onValue.listen((DatabaseEvent event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      int volume = data['volume'];
+      double percentage = volume / _refillCapacity;
+      setState(() {
+        _volume = volume;
+        _refillPercent = percentage;
+        _isInitDataLoading = false;
+      });
     });
+  }
 
-    debugPrint(randomNumber.toString());
+  void _onPressRefresh() {
+    _getVolumeValue();
+    // debugPrint('Memuat Ulang..');
+    // Random rng = Random();
+    // double randomNumber = rng.nextInt(100) / 100;
+    // setState(() {
+    //   _refillPercent = randomNumber;
+    // });
+
+    // debugPrint(randomNumber.toString());
     // ScaffoldMessenger.of(context)
     //     .showSnackBar(const SnackBar(content: Text('Memuat Ulang..')));
   }

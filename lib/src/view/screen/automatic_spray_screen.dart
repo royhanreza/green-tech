@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:green_tech/core/app_asset.dart';
 
@@ -9,8 +12,27 @@ class AutomaticSprayScreen extends StatefulWidget {
 }
 
 class _AutomaticSprayScreenState extends State<AutomaticSprayScreen> {
+  bool _isInitDataLoading = true;
+  StreamSubscription<DatabaseEvent>? _subscription;
+
   bool _isValveOneLoading = false;
   bool _isValveTwoLoading = false;
+
+  bool _isValveOneActive = true;
+  bool _isValveTwoActive = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _getControlValue();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,116 +115,147 @@ class _AutomaticSprayScreenState extends State<AutomaticSprayScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kontrol',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(
-                          height: 24,
-                        ),
-                        Card(
-                          clipBehavior: Clip.hardEdge,
-                          // color: Colors.teal[100],
-                          child: InkWell(
-                            onTap: _isValveOneLoading
-                                ? null
-                                : () {
-                                    debugPrint('valve 1 tapped');
-                                    _onTapValveOne();
-                                  },
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.opacity),
-                                  const SizedBox(
-                                    width: 20,
-                                  ),
-                                  const Expanded(
-                                      child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Selenoid Valve 1",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      SizedBox(
-                                        height: 5,
-                                      ),
-                                      Text(
-                                        "Aktifkan selenoid valve 1",
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  )),
-                                  Visibility(
-                                      visible: _isValveOneLoading,
-                                      child: const CircularProgressIndicator()),
-                                ],
+                    child: _isInitDataLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Kontrol',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Card(
-                          clipBehavior: Clip.hardEdge,
-                          // color: Colors.teal[100],
-                          child: InkWell(
-                            onTap: _isValveTwoLoading
-                                ? null
-                                : () {
-                                    debugPrint('valve 2 tapped');
-                                    _onTapValveTwo();
-                                  },
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.opacity),
-                                  const SizedBox(
-                                    width: 20,
-                                  ),
-                                  const Expanded(
-                                      child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Selenoid Valve 2",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      SizedBox(
-                                        height: 5,
-                                      ),
-                                      Text(
-                                        "Aktifkan selenoid valve 2",
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  )),
-                                  Visibility(
-                                      visible: _isValveTwoLoading,
-                                      child: const CircularProgressIndicator()),
-                                ],
+                              const SizedBox(
+                                height: 24,
                               ),
-                            ),
+                              Card(
+                                clipBehavior: Clip.hardEdge,
+                                // color: Colors.teal[100],
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.opacity),
+                                      const SizedBox(
+                                        width: 20,
+                                      ),
+                                      Expanded(
+                                          child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Selenoid Valve 1",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          const Text(
+                                            "Aktifkan selenoid valve 1",
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Switch(
+                                            value: _isValveOneActive,
+                                            onChanged: _isValveOneLoading
+                                                ? null
+                                                : (bool value) {
+                                                    _onChangeValveOne(value);
+                                                  },
+                                          ),
+                                        ],
+                                      )),
+                                      Visibility(
+                                          visible: _isValveOneLoading,
+                                          child:
+                                              const CircularProgressIndicator()),
+                                    ],
+                                  ),
+                                ),
+                                // child: InkWell(
+                                //   onTap: _isValveOneLoading
+                                //       ? null
+                                //       : () {
+                                //           debugPrint('valve 1 tapped');
+                                //           _onTapValveOne();
+                                //         },
+                                //   child: ,
+                                // ),
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              ),
+                              Card(
+                                clipBehavior: Clip.hardEdge,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.opacity),
+                                      const SizedBox(
+                                        width: 20,
+                                      ),
+                                      Expanded(
+                                          child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            "Selenoid Valve 2",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          const Text(
+                                            "Aktifkan selenoid valve 2",
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Switch(
+                                              value: _isValveTwoActive,
+                                              onChanged: _isValveTwoLoading
+                                                  ? null
+                                                  : (bool value) {
+                                                      _onChangeValveTwo(value);
+                                                    }),
+                                        ],
+                                      )),
+                                      Visibility(
+                                          visible: _isValveTwoLoading,
+                                          child:
+                                              const CircularProgressIndicator()),
+                                    ],
+                                  ),
+                                ),
+                                // color: Colors.teal[100],
+                                // child: InkWell(
+                                //   onTap: _isValveTwoLoading
+                                //       ? null
+                                //       : () {
+                                //           debugPrint('valve 2 tapped');
+                                //           _onTapValveTwo();
+                                //         },
+                                //   child: ,
+                                // ),
+                              )
+                            ],
                           ),
-                        )
-                      ],
-                    ),
                   )
                   // Padding(
                   //   padding: const EdgeInsets.only(
@@ -233,15 +286,68 @@ class _AutomaticSprayScreenState extends State<AutomaticSprayScreen> {
             )));
   }
 
-  void _onTapValveOne() async {
+  void _getControlValue() async {
+    DatabaseReference controlRef = FirebaseDatabase.instance.ref('control');
+    _subscription = controlRef.onValue.listen((DatabaseEvent event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      bool relay1 = data['relay1'] == 1 ? true : false;
+      bool relay2 = data['relay2'] == 1 ? true : false;
+      setState(() {
+        _isValveOneActive = relay1;
+        _isValveTwoActive = relay2;
+        _isInitDataLoading = false;
+      });
+    });
+  }
+
+  void _onChangeValveOne(bool active) async {
+    print('toggle valve 1');
     setState(() {
       _isValveOneLoading = true;
     });
-    await Future.delayed(const Duration(seconds: 1));
+
+    DatabaseReference ref = FirebaseDatabase.instance.ref("control");
+    await ref.update({
+      "relay1": active ? 1 : 0,
+    });
+
+    await Future.delayed(const Duration(seconds: 10));
+
     setState(() {
       _isValveOneLoading = false;
     });
-    _showValveSnackBar(contentText: 'Selenoid valve 1 berhasil diaktifkan');
+
+    if (active) {
+      _showValveSnackBar(contentText: 'Selenoid valve 1 berhasil diaktifkan');
+    } else {
+      _showValveSnackBar(
+          contentText: 'Selenoid valve 1 berhasil dinonaktifkan');
+    }
+  }
+
+  void _onChangeValveTwo(bool active) async {
+    print('toggle valve 1');
+    setState(() {
+      _isValveTwoLoading = true;
+    });
+
+    DatabaseReference ref = FirebaseDatabase.instance.ref("control");
+    await ref.update({
+      "relay2": active ? 1 : 0,
+    });
+
+    await Future.delayed(const Duration(seconds: 10));
+
+    setState(() {
+      _isValveTwoLoading = false;
+    });
+
+    if (active) {
+      _showValveSnackBar(contentText: 'Selenoid valve 2 berhasil diaktifkan');
+    } else {
+      _showValveSnackBar(
+          contentText: 'Selenoid valve 2 berhasil dinonaktifkan');
+    }
   }
 
   void _onTapValveTwo() async {
